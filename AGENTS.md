@@ -50,29 +50,31 @@ cd frontend && npm run lint
 - `frontend/public/libs/live2dcubismcore.min.js` — Cubism SDK Core
 - `frontend/public/models/` — Live2D 模型文件（PinkFox、Hiyori、Haru）
 
-## PinkFox 表情参数速查（已验证）
+## PinkFox 表情参数速查（基于 .cdi3.json 权威名称）
+
+视觉名称必须以 `PinkFox.cdi3.json` 为准，`.exp3.json` 文件名后缀仅决定 exp_id→key 的映射，不决定视觉效果。`EXPRESSIONS` 字典在 `frontend/src/components/Live2DModel.jsx`，`config.yaml` 的 `expressions:` 段做语义名→exp_id 映射。换模型必须两边都改。
 
 | exp_id | 参数 ID | 视觉效果 | 语义名 |
 |--------|---------|----------|--------|
 | 0 | key9 | 猫猫眼 | surprised, cat_eyes |
 | 1 | key1 | 发型1 | — |
 | 2 | key18 | 发型2 | — |
-| 3 | key2 | 红脸 | happy, shy |
+| 3 | key2 | 吐舌 | — |
 | 4 | key3 | 黑脸 | dark_face |
 | 5 | key4 | 眼泪 | sad |
-| 6 | key5 | nn眼 | nn_eyes |
-| 7 | key6 | 生气瘪嘴 | angry |
-| 8 | key7 | 死鱼眼 | dead_fish |
-| 9 | key8 | 咪咪眼 | squint |
+| 6 | key5 | 脸红 | happy, shy |
+| 7 | key6 | nn眼 | nn_eyes |
+| 8 | key7 | 生气瘪嘴 | angry |
+| 9 | key8 | 死鱼眼 | dead_fish, squint |
 | 10 | key13 | 总督 | — |
-| 11 | key12 | 嘟嘴 | pout |
+| 11 | key12 | 钱钱 | money_eyes |
 | 12 | key19 | 兽耳消失 | ears_off |
 | 13 | key20 | 尾巴消失 | tail_off |
-| 14 | key10 | 嘟嘴 | — |
+| 14 | key10 | --眼 | — |
 | 15 | key14 | 提督 | — |
 | 16 | key15 | 舰长 | — |
 | 17 | key17 | 泪眼 | teary |
-| 18 | key11 | 钱钱眼 | money_eyes |
+| 18 | key11 | 嘟嘴 | pout |
 | 19 | key16 | 爱心 | love |
 | -1 | — | 清除表情 | neutral |
 
