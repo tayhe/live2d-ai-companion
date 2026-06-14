@@ -8,3 +8,8 @@ venv/
 *.egg
 .mypy_cache/
 .ruff_cache/
+
+# Debug scripts and screenshots
+cdp_*.py
+*.png
+!frontend/**
