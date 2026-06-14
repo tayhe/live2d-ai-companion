@@ -1,24 +1,54 @@
+import asyncio
 import logging
+import threading
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
 from src.config import load_config
-from src.exapi_client import ExAPIClient
+from src.push_server import PushServer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 config = load_config(Path(__file__).parent.parent / "config.yaml")
-exapi = ExAPIClient(config.exapi.url)
+push = PushServer(config.exapi.host, config.exapi.port)
+
+
+def _start_push_in_thread() -> None:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(push.start())
+    loop.run_forever()
+
+
+threading.Thread(target=_start_push_in_thread, daemon=True).start()
 
 mcp = FastMCP(
     "live2d-companion",
     instructions=(
-        "Live2D 桌面伴侣控制工具。"
-        "使用 say 让角色说话，set_expression 控制表情，"
-        "play_motion 播放动作，set_position 移动位置，"
-        "set_effect 添加天气特效。"
+        "Live2D 桌面伴侣控制工具。你有一个 Live2D 虚拟形象（PinkFox），它是你的视觉化身。\n"
+        "每次回复用户时，根据你的情绪和回复内容，自然地选择合适的表情。\n"
+        "表情会在 8 秒后自动清除，所以不需要手动清理。\n\n"
+        "可用表情及使用场景：\n"
+        "  happy — 开心、高兴、正面回应\n"
+        "  sad — 伤心、难过、同情\n"
+        "  angry — 生气、不满、警告\n"
+        "  surprised — 惊讶、好奇、意外\n"
+        "  love — 喜欢、感动、感谢\n"
+        "  shy — 害羞、不好意思（同 happy）\n"
+        "  pout — 委屈、撒娇、傲娇\n"
+        "  squint — 得意、满足、自信\n"
+        "  dead_fish — 无语、无奈、吐槽\n"
+        "  nn_eyes — 呆萌、困惑\n"
+        "  dark_face — 尴尬\n"
+        "  money_eyes — 期待、贪财\n"
+        "  teary — 感动、委屈\n"
+        "  cat_eyes — 惊讶、好奇\n"
+        "  neutral — 清除表情，恢复默认\n\n"
+        "使用 say 工具时，可以在回复前后搭配 set_expression 表达情绪。\n"
+        "也可以用 play_motion 触发动作（idle, tap_body）。\n\n"
+        "推荐使用 say_and_express 工具，它会同时显示文字和切换表情，一次调用完成两件事。"
     ),
 )
 
@@ -31,16 +61,21 @@ async def say(text: str, duration: int = 3000) -> str:
         text: 要显示的文字内容
         duration: 气泡显示时长（毫秒），默认 3000
     """
-    await exapi.display_text(config.model.index, text, duration)
+    await push.display_text(config.model.index, text, duration)
     return f"已显示文字：{text}"
 
 
 @mcp.tool()
 async def set_expression(expression: str) -> str:
-    """设置 Live2D 角色的表情。
+    """设置 Live2D 角色的表情。根据你的回复内容选择合适的情绪。
 
     Args:
-        expression: 表情名称，如 happy, sad, angry, surprised, neutral
+        expression: 表情名称。可用：
+            happy(开心), sad(伤心), angry(生气), surprised(惊讶),
+            love(喜欢/感动), shy(害羞), pout(委屈/撒娇),
+            squint(得意), dead_fish(无语), nn_eyes(呆萌),
+            dark_face(尴尬), money_eyes(期待), teary(感动/泪目),
+            cat_eyes(好奇), neutral(清除表情)
     """
     if expression not in config.expressions:
         available = ", ".join(config.expressions.keys())
@@ -48,11 +83,35 @@ async def set_expression(expression: str) -> str:
 
     exp_id = config.expressions[expression]
     if exp_id == -1:
-        await exapi.clear_expression(config.model.index)
+        await push.clear_expression(config.model.index)
         return "已清除表情"
     else:
-        await exapi.set_expression(config.model.index, exp_id)
+        await push.set_expression(config.model.index, exp_id)
         return f"已设置表情：{expression}"
+
+
+@mcp.tool()
+async def say_and_express(text: str, expression: str = "happy", duration: int = 3000) -> str:
+    """让角色说话并同时切换表情。最常用的工具——根据你的情绪选择表情。
+
+    Args:
+        text: 要显示的文字内容
+        expression: 表情名称（happy/sad/angry/surprised/love/shy/pout/squint/dead_fish/nn_eyes/dark_face/money_eyes/teary/cat_eyes/neutral），默认 happy
+        duration: 气泡显示时长（毫秒），默认 3000
+    """
+    await push.display_text(config.model.index, text, duration)
+    result = f"已显示文字：{text}"
+
+    if expression in config.expressions:
+        exp_id = config.expressions[expression]
+        if exp_id == -1:
+            await push.clear_expression(config.model.index)
+            result += "，已清除表情"
+        else:
+            await push.set_expression(config.model.index, exp_id)
+            result += f"，表情：{expression}"
+
+    return result
 
 
 @mcp.tool()
@@ -67,7 +126,7 @@ async def play_motion(motion: str) -> str:
         return f"未知动作 '{motion}'。可用：{available}"
 
     mtn = config.motions[motion]
-    await exapi.trigger_motion(config.model.index, mtn)
+    await push.trigger_motion(config.model.index, mtn)
     return f"已播放动作：{motion}"
 
 
@@ -79,7 +138,7 @@ async def set_position(x: int, y: int) -> str:
         x: 水平像素坐标（原点在左下角）
         y: 垂直像素坐标（原点在左下角）
     """
-    await exapi.set_position(config.model.index, x, y)
+    await push.set_position(config.model.index, x, y)
     return f"已移动到 ({x}, {y})"
 
 
@@ -95,7 +154,7 @@ async def set_effect(effect: str) -> str:
         return f"未知特效 '{effect}'。可用：{available}"
 
     effect_id = config.effects[effect]
-    await exapi.set_effect(effect_id)
+    await push.set_effect(effect_id)
     return f"已设置特效：{effect}"
 
 

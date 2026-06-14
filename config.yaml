@@ -5,17 +5,34 @@ exapi:
 model:
   index: 0
 
+# PinkFox 表情映射（exp_id 对应 frontend/src/components/Live2DModel.jsx 中 EXPRESSIONS 字典的 key）
+# ID 对应的实际效果：
+#   3: 红脸(key2)  4: 黑脸(key3)  5: 眼泪(key4)  6: nn眼(key5)
+#   7: 生气瘪嘴(key6)  8: 死鱼眼(key7)  9: 咪咪眼(key8)  0: 猫猫眼(key9)
+#   11: 嘟嘴(key12)  19: 爱心(key16)  17: 泪眼(key17)  18: 钱钱眼(key11)
+#   12: 兽耳消失(key19)  13: 尾巴消失(key20)
 expressions:
-  happy: 0
-  sad: 1
-  angry: 2
-  surprised: 3
-  neutral: -1
+  happy: 3          # 红脸 — 开心、害羞
+  sad: 5            # 眼泪 — 伤心、难过
+  angry: 7          # 生气瘪嘴 — 生气、不满
+  surprised: 0      # 猫猫眼 — 惊讶、好奇
+  love: 19          # 爱心 — 喜欢、感动
+  shy: 3            # 红脸 — 害羞（同 happy）
+  pout: 11          # 嘟嘴 — 委屈、撒娇
+  squint: 9         # 咪咪眼 — 得意、满足
+  dead_fish: 8      # 死鱼眼 — 无语、无奈
+  nn_eyes: 6        # nn眼 — 呆萌
+  dark_face: 4      # 黑脸 — 尴尬、尴尬
+  money_eyes: 18    # 钱钱眼 — 贪财、期待
+  teary: 17         # 泪眼 — 感动、委屈
+  cat_eyes: 0       # 猫猫眼 — 惊讶
+  ears_off: 12      # 兽耳消失 — 特殊效果
+  tail_off: 13      # 尾巴消失 — 特殊效果
+  neutral: -1       # 清除表情
 
 motions:
-  tap: "Tap"
-  idle: "Idle"
-  tap_body: "TapBody"
+  idle: ""
+  tap_body: ""
 
 effects:
   rain: 100100

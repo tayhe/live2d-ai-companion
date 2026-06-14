@@ -74,4 +74,26 @@ asyncio.run(test())
 | 13500 | 播放声音 | `{id, channel, volume, sound}` |
 | 14000 | 设置特效 | effect_id |
 
+## PinkFox 表情参数速查（已验证）
+
+| 语义名 | exp_id | 参数 ID | 视觉效果 |
+|--------|--------|---------|----------|
+| happy/shy | 3 | key2 | 红脸 |
+| dark_face | 4 | key3 | 黑脸 |
+| sad | 5 | key4 | 眼泪 |
+| nn_eyes | 6 | key5 | nn眼 |
+| angry | 7 | key6 | 生气瘪嘴 |
+| dead_fish | 8 | key7 | 死鱼眼 |
+| squint | 9 | key8 | 咪咪眼 |
+| cat_eyes/surprised | 0 | key9 | 猫猫眼 |
+| pout | 11 | key12 | 嘟嘴 |
+| love | 19 | key16 | 爱心 |
+| teary | 17 | key17 | 泪眼 |
+| money_eyes | 18 | key11 | 钱钱眼 |
+| ears_off | 12 | key19 | 兽耳消失 |
+| tail_off | 13 | key20 | 尾巴消失 |
+| neutral | -1 | — | 清除表情 |
+
+**嘴型**：3 参数复合 `ParamMouthOpenY` + `Tonguelicking` + `MouthBig2`(×0.6)
+
 完整文档：https://live2d.pavostudio.com/doc/en-us/exapi/
