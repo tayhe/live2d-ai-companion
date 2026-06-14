@@ -37,6 +37,7 @@ const Live2DDisplay = forwardRef(({ onTouch }, ref) => {
   const modelRef = useRef(null)
   const activeExprRef = useRef(null)
   const activeExprParamRef = useRef(null)
+  const activeExprValueRef = useRef(0)
   const resetTimerRef = useRef(null)
   const mouthValueRef = useRef(0)
 
@@ -51,18 +52,24 @@ const Live2DDisplay = forwardRef(({ onTouch }, ref) => {
       }
       activeExprRef.current = expId
       activeExprParamRef.current = expr.param
-      console.log(`[Live2D] set expression ${expId} (${expr.name}): ${expr.param}=1`)
+      activeExprValueRef.current = 1
 
       clearTimeout(resetTimerRef.current)
       resetTimerRef.current = setTimeout(() => {
         if (activeExprRef.current === expId) {
-          activeExprRef.current = null
-          activeExprParamRef.current = null
+          activeExprValueRef.current = 0
+          setTimeout(() => {
+            if (activeExprRef.current === expId) {
+              activeExprRef.current = null
+              activeExprParamRef.current = null
+            }
+          }, 500)
         }
       }, 8000)
     },
 
     clearExpression() {
+      activeExprValueRef.current = 0
       activeExprRef.current = null
       activeExprParamRef.current = null
       clearTimeout(resetTimerRef.current)
@@ -112,11 +119,9 @@ const Live2DDisplay = forwardRef(({ onTouch }, ref) => {
     ;(async () => {
       if (modelRef.current) return
       try {
-        console.log('[Live2D] Loading model from', MODEL_PATH)
         const model = await Live2DModel.from(MODEL_PATH)
         if (destroyed || !appRef.current) return
 
-        console.log('[Live2D] Model loaded:', model.width, 'x', model.height)
         modelRef.current = model
         window.__live2dModel = model
 
@@ -163,8 +168,9 @@ const Live2DDisplay = forwardRef(({ onTouch }, ref) => {
           c.setParameterValueById('ParamMouthOpenY', m)
           c.setParameterValueById('Tonguelicking', m)
           c.setParameterValueById('MouthBig2', m * 0.6)
-          if (activeExprParamRef.current) {
-            c.setParameterValueById(activeExprParamRef.current, 1)
+          const exprParam = activeExprParamRef.current
+          if (exprParam) {
+            c.setParameterValueById(exprParam, activeExprValueRef.current)
           }
         })
       } catch (err) {
