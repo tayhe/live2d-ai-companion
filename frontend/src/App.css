@@ -15,6 +15,7 @@ html, body, #root {
   width: 100vw;
   height: 100vh;
   position: relative;
+  transform-style: preserve-3d;
 }
 
 .live2d-main {
@@ -32,12 +33,15 @@ html, body, #root {
   position: fixed;
   left: 50%;
   bottom: 40px;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateZ(1px);
   width: 80%;
   max-width: 600px;
-  z-index: 10;
+  z-index: 100;
   text-align: center;
   transition: opacity 0.4s ease;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  isolation: isolate;
 }
 
 .dialogue-box.hidden {

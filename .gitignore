@@ -10,6 +10,6 @@ venv/
 .ruff_cache/
 
 # Debug scripts and screenshots
-cdp_*.py
+scripts/debug/
 *.png
 !frontend/**

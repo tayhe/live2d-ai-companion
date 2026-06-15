@@ -1,5 +1,5 @@
 const WS_PORT = 10086
-const WS_URL = `ws://${location.hostname}:${WS_PORT}`
+const WS_URL = `ws://${location.hostname}:${location.port}/ws`
 
 export function createWsConnection(handlers = {}) {
   let ws = null
