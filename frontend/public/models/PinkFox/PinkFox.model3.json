@@ -23,7 +23,7 @@
 		{
 			"Target": "Parameter",
 			"Name": "EyeBlink",
-			"Ids": []
+			"Ids": ["ParamEyeLOpen", "ParamEyeROpen"]
 		}
 	]
 }

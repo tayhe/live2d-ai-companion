@@ -40,7 +40,9 @@ const Live2DDisplay = forwardRef(({ onTouch }, ref) => {
   const activeExprParamRef = useRef(null)
   const activeExprValueRef = useRef(0)
   const resetTimerRef = useRef(null)
+  const paramIntervalRef = useRef(null)
   const mouthValueRef = useRef(0)
+  const elapsedRef = useRef(0)
 
   useImperativeHandle(ref, () => ({
     showExpression(expId) {
@@ -92,48 +94,20 @@ const Live2DDisplay = forwardRef(({ onTouch }, ref) => {
         return
       }
       const mm = model.internalModel?.motionManager
-      console.log(`[Live2D] === triggerMotion START: "${motion}" ===`)
-      console.log(`[Live2D] model exists:`, !!model)
-      console.log(`[Live2D] motionManager exists:`, !!mm)
-      console.log(`[Live2D] motionManager definitions:`, mm?.definitions ? Object.keys(mm.definitions) : 'none')
-      if (mm?.definitions?.['']) {
-        console.log(`[Live2D] empty group has ${mm.definitions[''].length} motions`)
-      }
-      
-      // Try direct motion manager approach
+      if (!mm) return
+
       const sep = motion.indexOf(':')
-      if (sep >= 0) {
-        const group = motion.substring(0, sep)
-        const index = parseInt(motion.substring(sep + 1), 10)
-        console.log(`[Live2D] Attempting motion group="${group}" index=${index}`)
-        
-        // Method 1: model.motion
-        try {
-          const r1 = model.motion(group, index)
-          console.log(`[Live2D] model.motion() returned:`, r1)
-        } catch (e) {
-          console.error(`[Live2D] model.motion() error:`, e)
-        }
-        
-        // Method 2: motionManager.startMotion
-        if (mm) {
-          try {
-            const r2 = mm.startMotion(group, index)
-            console.log(`[Live2D] mm.startMotion() returned:`, r2)
-          } catch (e) {
-            console.error(`[Live2D] mm.startMotion() error:`, e)
-          }
-        }
+      const group = sep >= 0 ? motion.substring(0, sep) : motion
+      const index = sep >= 0 ? parseInt(motion.substring(sep + 1), 10) : undefined
+
+      console.log(`[Live2D] triggerMotion: group="${group}" index=${index}`)
+      // Call only ONCE (not both model.motion and mm.startMotion)
+      // model.motion handles fade in/out properly via Cubism motionManager state
+      if (index !== undefined) {
+        model.motion(group, index)
       } else {
-        console.log(`[Live2D] Attempting motion "${motion}"`)
-        try {
-          const r = model.motion(motion)
-          console.log(`[Live2D] model.motion() returned:`, r)
-        } catch (e) {
-          console.error(`[Live2D] model.motion() error:`, e)
-        }
+        model.motion(group)
       }
-      console.log(`[Live2D] === triggerMotion END ===`)
     },
 
     setPosition(x, y) {
@@ -190,8 +164,23 @@ const Live2DDisplay = forwardRef(({ onTouch }, ref) => {
           console.log('[Live2D] Empty group motions count:', mm.definitions[''].length)
         }
         mm.stopAllMotions()
+        if (mm.state && mm.state.shouldRequestIdleMotion) {
+          mm.state.shouldRequestIdleMotion = () => false
+        }
         model.autoInteract = false
         model.draggable = false
+        model.autoUpdate = false  // Disable PIXI ticker auto-update; we drive updates from setInterval
+
+        // Patch _startMotion to enable crossfade between motions.
+        // The default _startMotion calls stopAllMotions() which immediately kills
+        // the old motion (hard cut, no fade). The lower-level queueManager.startMotion()
+        // supports crossfade by calling setFadeOut() on old entries before adding the new one.
+        // We also use accumulated elapsed time (seconds) instead of performance.now() (ms)
+        // to match the time base used by im.update() → motionManager.update().
+        mm._startMotion = function(motion, onFinish) {
+          motion.setFinishedMotionHandler(onFinish)
+          return mm.queueManager.startMotion(motion, false, elapsedRef.current / 1000)
+        }
 
         const scale = Math.min(
           app.view.width / model.width,
@@ -224,10 +213,25 @@ const Live2DDisplay = forwardRef(({ onTouch }, ref) => {
         })
 
         // write mouth + expression params each frame (defeats idle motion reset)
+        // Use setInterval to drive both Cubism update AND PIXI render because
+        // Chrome throttles requestAnimationFrame to 0fps in background tabs.
+        // We do everything that app.ticker.add() would do + render.
         let debugFrameCount = 0
-        app.ticker.add(() => {
+        let lastTime = performance.now()
+        paramIntervalRef.current = setInterval(() => {
           if (!modelRef.current) return
-          const c = modelRef.current.internalModel.coreModel
+          const now = performance.now()
+          const dt = now - lastTime
+          lastTime = now
+          elapsedRef.current += dt
+
+          // Drive full Cubism update pipeline (motion, physics, eyeblink, pose)
+          // This handles fade in/out for motions.
+          const im = modelRef.current.internalModel
+          im.update(dt, elapsedRef.current)
+
+          // Override mouth + expression params AFTER motion update
+          const c = im.coreModel
           const m = mouthValueRef.current
           c.setParameterValueById('ParamMouthOpenY', m)
           c.setParameterValueById('Tonguelicking', m)
@@ -240,7 +244,12 @@ const Live2DDisplay = forwardRef(({ onTouch }, ref) => {
               console.log(`[Live2D] Ticker: setting ${exprParam}=${exprVal}`)
             }
           }
-        })
+
+          // Render the stage (rAF is throttled in background tabs)
+          if (appRef.current) {
+            appRef.current.renderer.render(appRef.current.stage)
+          }
+        }, 16) // ~60fps
       } catch (err) {
         console.error('[Live2D] Failed to load model:', err)
       }
@@ -248,6 +257,8 @@ const Live2DDisplay = forwardRef(({ onTouch }, ref) => {
 
     return () => {
       destroyed = true
+      clearInterval(paramIntervalRef.current)
+      paramIntervalRef.current = null
       clearTimeout(resetTimerRef.current)
       if (modelRef.current) {
         modelRef.current.destroy()

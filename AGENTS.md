@@ -12,8 +12,102 @@
 - **表情/动作是模型相关的**：`config.yaml` 中的 `expressions` 和 `motions` 映射是当前模型的。**换模型必须改配置和前端 EXPRESSIONS 字典**。
 - **PinkFox 表情参数是二值开关**：`setParameterValueById(paramId, 0或1)`，不是连续值。
 - **PinkFox 嘴型是 3 参数复合**：`ParamMouthOpenY` + `Tonguelicking` + `MouthBig2`(×0.6)，单独设一个不够。
-- **PIXI ticker 必须每帧写入**：包括值为 0 时。否则 idle motion 会覆盖，导致嘴闭不上或表情不清。
 - **`model.expression()` 在 PinkFox 上无效**：`internalModel.expressionManager` 不存在，不会发起 .exp3.json 请求。必须用 `setParameterValueById`。
+- **EyeBlink 必须配置**：model3.json 的 `Groups` 中 `EyeBlink.Ids` 不能为 `[]`。必须指定参数 ID（如 `["ParamEyeLOpen", "ParamEyeROpen"]`），否则 `im.eyeBlink` 为 undefined，眼睛不会眨。
+- **Vite 在 WSL2 `/mnt/` 文件系统上 HMR 不工作**：文件变化不会被 Vite 检测到。修改代码后必须手动重启 Vite（`kill` + `setsid npx vite`）。
+
+## Live2D 渲染管线（正确做法）
+
+### 核心架构
+
+```
+setInterval(16ms)
+  → im.update(dt, elapsed)     // 驱动 Cubism 全管线：动作淡入淡出、物理、眨眼、姿态
+  → 写入表情/嘴型参数          // 必须在 im.update() 之后，覆盖 motion 的输出
+  → app.renderer.render(stage) // 渲染到 canvas
+```
+
+### 必须设置 `model.autoUpdate = false`
+
+**原因**：pixi-live2d-display 默认通过 PIXI ticker（rAF）自动调用 `model.update()` → `im.update()`。如果同时用 setInterval 也调用 `im.update()`，前台标签页中会产生**双重更新**，导致动作以 2 倍速播放（"抽搐"）。
+
+**正确做法**：
+```js
+model.autoUpdate = false  // 禁用 PIXI ticker 自动更新
+model.autoInteract = false
+model.draggable = false
+// 禁止 idle motion 自动触发
+if (mm.state && mm.state.shouldRequestIdleMotion) {
+  mm.state.shouldRequestIdleMotion = () => false
+}
+```
+
+### setInterval 驱动更新
+
+```js
+let lastTime = performance.now()
+let elapsed = 0
+paramIntervalRef.current = setInterval(() => {
+  if (!modelRef.current) return
+  const now = performance.now()
+  const dt = now - lastTime
+  lastTime = now
+  elapsed += dt
+
+  // 1. 驱动 Cubism 全管线
+  const im = modelRef.current.internalModel
+  im.update(dt, elapsed)
+
+  // 2. 覆盖表情/嘴型参数（在 update 之后）
+  const c = im.coreModel
+  c.setParameterValueById('ParamMouthOpenY', mouthValueRef.current)
+  c.setParameterValueById('Tonguelicking', mouthValueRef.current)
+  c.setParameterValueById('MouthBig2', mouthValueRef.current * 0.6)
+  // ... expression params ...
+
+  // 3. 渲染
+  if (appRef.current) {
+    appRef.current.renderer.render(appRef.current.stage)
+  }
+}, 16)
+```
+
+### 绝对不能做的事
+
+| 错误做法 | 后果 |
+|---------|------|
+| 不设 `model.autoUpdate = false` | 前台双重更新，动作 2 倍速抽搐 |
+| `im.update(dt * 0.5, elapsed)` 缩放 dt | Cubism 管线渲染不出可见效果，动作 playing=true 但无变化 |
+| `im.update(dt, performance.now())` 用绝对时间 | 动作跳到随机位置或不播放 |
+| `app.ticker.add()` 替代 setInterval | 后台标签页 rAF 节流到 0fps，表情/动作/眨眼全部失效 |
+| 同时调用 `model.motion()` 和 `mm.startMotion()` | 双重触发，fade 冲突 |
+
+### 已知模型限制
+
+- **kuku 动作在 PinkFox 上无视觉效果**：`kuku.motion3.json` 控制 Param3（左眼泪）和 Param4（右眼泪），PinkFox 不渲染泪珠。参数值变化（0→2）但无可见变化。
+- **Haru 动作文件不兼容 PinkFox**：Haru 的 motion3.json 使用 63 条曲线，但参数范围和曲线形状是为 Haru 模型设计的，在 PinkFox 上无可见效果或效果异常。
+
+### 参考实现
+
+nana 项目的 Live2D 渲染：`/mnt/f/Syncthing/cloud/Projects/nana/frontend/src/components/Live2DModel.jsx`（line 213-230）。使用 `app.ticker.add()` 只写参数，不手动调用 `im.update()`。我们的项目因为后台标签页 rAF 节流，必须用 setInterval + `im.update()` + `model.autoUpdate = false`。
+
+### 动作触发（只调一次）
+
+```js
+triggerMotion(motion) {
+  const model = modelRef.current
+  if (!model) return
+  const sep = motion.indexOf(':')
+  const group = sep >= 0 ? motion.substring(0, sep) : motion
+  const index = sep >= 0 ? parseInt(motion.substring(sep + 1), 10) : undefined
+  // 只调用 model.motion()，不要同时调 mm.startMotion()
+  if (index !== undefined) {
+    model.motion(group, index)
+  } else {
+    model.motion(group)
+  }
+}
+```
 
 ## 开发命令
 
@@ -80,6 +174,10 @@ cd frontend && npm run lint
 
 **嘴型**：3 参数复合 `ParamMouthOpenY` + `Tonguelicking` + `MouthBig2`(×0.6)
 
+**已验证可用的 13 个表情**（与 nana 项目一致）：吐舌(3)、黑脸(4)、眼泪(5)、脸红(6)、nn眼(7)、生气瘪嘴(8)、死鱼眼(9)、生气/猫猫眼(0)、咪咪眼(14)、嘟嘴(18)、钱钱眼(11)、爱心(19)、泪眼(17)
+
+**已验证可用的 2 个动作**：kuku(:0)、摇头晃脑(:1)。kuku 控制泪珠参数（Param3/Param4），视觉效果不明显。
+
 ## WebSocket 协议
 
 前端连接 `ws://localhost:10086`，接收 JSON 命令：
@@ -105,9 +203,10 @@ cd frontend && npm run lint
 1. 将模型文件放入 `frontend/public/models/<模型名>/`
 2. 检查 .model3.json 中的 Motions 定义
 3. 检查 .exp3.json 文件中的 ParamId（每个文件对应一个参数）
-4. 更新 `config.yaml` 的 `expressions` 映射
-5. 更新 `frontend/src/components/Live2DModel.jsx` 的 `EXPRESSIONS` 字典
-6. 重启 MCP Server 和前端
+4. **检查 .model3.json 的 Groups 段**：`EyeBlink.Ids` 必须包含眨眼参数（如 `["ParamEyeLOpen", "ParamEyeROpen"]`），否则眼睛不会眨
+5. 更新 `config.yaml` 的 `expressions` 映射
+6. 更新 `frontend/src/components/Live2DModel.jsx` 的 `EXPRESSIONS` 字典
+7. 重启 MCP Server 和前端
 
 调试脚本模板（通过 PushServer 直接测试）：
 

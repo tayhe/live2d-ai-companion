@@ -27,6 +27,10 @@ expressions:
   money_eyes: 11    # 钱钱 — 贪财、期待
   teary: 17         # 泪眼 — 感动、委屈
   cat_eyes: 0       # 猫猫眼 — 惊讶
+  tongue: 3         # 吐舌 — 调皮、俏皮
+  angry2: 0         # 生气 — 同猫猫眼（key9）
+  squint2: 14       # 咪咪眼 — 撒娇、卖萌
+  money_eyes2: 11   # 钱钱眼 — 同money_eyes
   ears_off: 12      # 兽耳消失 — 特殊效果
   tail_off: 13      # 尾巴消失 — 特殊效果
   neutral: -1       # 清除表情
