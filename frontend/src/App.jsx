@@ -42,6 +42,7 @@ function App() {
   const [quickReplyOptions, setQuickReplyOptions] = useState([])
   const [history, setHistory] = useState([])
   const [showHistory, setShowHistory] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
   const [chatInput, setChatInput] = useState('')
   const moodTimerRef = useRef(null)
 
@@ -109,6 +110,9 @@ function App() {
       if (e.key === 'Escape' || e.key === 'h') {
         setShowHistory(prev => !prev)
       }
+      if (e.key === 'd') {
+        setShowDebug(prev => !prev)
+      }
     }
     window.addEventListener('keydown', handleKey)
 
@@ -174,14 +178,16 @@ function App() {
       </DialogueBox>
       {ripples.map(r => <TouchRipple key={r.id} x={r.x} y={r.y} />)}
       <DialogueHistory history={history} charName="薇冉" visible={showHistory} onClose={() => setShowHistory(false)} />
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: 'rgba(0,0,0,0.8)', color: '#0f0', fontSize: 11,
-        fontFamily: 'monospace', padding: 4, maxHeight: 150, overflow: 'auto',
-        zIndex: 9999
-      }}>
-        {debugLogs.slice(-10).map((log, i) => <div key={i}>{log}</div>)}
-      </div>
+      {showDebug && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          background: 'rgba(0,0,0,0.8)', color: '#0f0', fontSize: 11,
+          fontFamily: 'monospace', padding: 4, maxHeight: 150, overflow: 'auto',
+          zIndex: 9999
+        }}>
+          {debugLogs.slice(-10).map((log, i) => <div key={i}>{log}</div>)}
+        </div>
+      )}
     </div>
   )
 }
