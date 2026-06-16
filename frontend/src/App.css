@@ -78,3 +78,39 @@ html, body, #root {
 }
 .ws-status.on { background: #4caf50; }
 .ws-status.off { background: #f44336; }
+
+/* mood indicator */
+.mood-indicator {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  border-radius: 20px;
+  border: 2px solid transparent;
+  z-index: 20;
+  transition: border-color 0.4s ease;
+  user-select: none;
+}
+.mood-icon {
+  font-size: 22px;
+  line-height: 1;
+  transition: transform 0.3s ease;
+}
+.mood-icon.changed {
+  animation: mood-bounce 0.4s ease;
+}
+@keyframes mood-bounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+.mood-label {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
