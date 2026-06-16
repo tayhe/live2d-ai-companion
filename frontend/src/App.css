@@ -349,6 +349,50 @@ html, body, #root {
   color: rgba(255, 255, 255, 0.85);
 }
 
+/* chat input bar */
+.chat-input-bar {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 500px;
+  z-index: 110;
+  display: flex;
+  gap: 8px;
+}
+.chat-input {
+  flex: 1;
+  padding: 10px 16px;
+  background: rgba(10, 10, 30, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  backdrop-filter: blur(8px);
+  transition: border-color 0.3s ease;
+}
+.chat-input:focus {
+  border-color: rgba(47, 164, 231, 0.6);
+}
+.chat-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+.chat-send-btn {
+  padding: 10px 20px;
+  background: rgba(47, 164, 231, 0.6);
+  border: none;
+  border-radius: 24px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.chat-send-btn:hover {
+  background: rgba(47, 164, 231, 0.9);
+}
+
 /* reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .particles { display: none; }

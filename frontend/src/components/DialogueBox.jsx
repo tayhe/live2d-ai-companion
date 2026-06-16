@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-export default function DialogueBox() {
+export default function DialogueBox({ children }) {
   const [text, setText] = useState('')
   const [visible, setVisible] = useState(false)
   const timerRef = useRef(null)
@@ -19,8 +19,13 @@ export default function DialogueBox() {
   }, [])
 
   return (
-    <div className={`dialogue-box ${visible ? 'visible' : 'hidden'}`}>
-      <div className="dialogue-text">{text}</div>
-    </div>
+    <>
+      <div className={`dialogue-box ${visible ? 'visible' : 'hidden'}`}>
+        <div className="dialogue-text">{text}</div>
+      </div>
+      <div className="chat-input-bar">
+        {children}
+      </div>
+    </>
   )
 }

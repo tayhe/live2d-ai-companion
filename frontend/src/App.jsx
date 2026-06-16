@@ -42,6 +42,7 @@ function App() {
   const [quickReplyOptions, setQuickReplyOptions] = useState([])
   const [history, setHistory] = useState([])
   const [showHistory, setShowHistory] = useState(false)
+  const [chatInput, setChatInput] = useState('')
   const moodTimerRef = useRef(null)
 
   const addHistory = useCallback((type, content) => {
@@ -138,6 +139,15 @@ function App() {
     setQuickReplyOptions([])
   }
 
+  function handleSendMessage() {
+    const text = chatInput.trim()
+    if (!text) return
+    wsRef.current?.send({ type: 'user_message', text })
+    addHistory('user', text)
+    setChatInput('')
+    setQuickReplyOptions([])
+  }
+
   const rimColor = MOOD_TO_RIM[currentExpression] || 'rgba(47, 164, 231, 0.15)'
 
   return (
@@ -151,8 +161,17 @@ function App() {
       <div className="live2d-main">
         <Live2DDisplay ref={live2dRef} onTouch={handleTouch} />
       </div>
-      <DialogueBox />
-      <QuickReplies options={quickReplyOptions} onSelect={handleQuickReplySelect} visible={quickReplyOptions.length > 0} />
+      <DialogueBox>
+        <QuickReplies options={quickReplyOptions} onSelect={handleQuickReplySelect} visible={quickReplyOptions.length > 0} />
+        <input
+          className="chat-input"
+          value={chatInput}
+          onChange={(e) => setChatInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+          placeholder="输入消息..."
+        />
+        <button className="chat-send-btn" onClick={handleSendMessage}>发送</button>
+      </DialogueBox>
       {ripples.map(r => <TouchRipple key={r.id} x={r.x} y={r.y} />)}
       <DialogueHistory history={history} charName="薇冉" visible={showHistory} onClose={() => setShowHistory(false)} />
       <div style={{
