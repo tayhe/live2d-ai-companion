@@ -2,6 +2,8 @@ import { useRef, useEffect, useState } from 'react'
 import Live2DDisplay from './components/Live2DModel'
 import DialogueBox from './components/DialogueBox'
 import MoodIndicator from './components/MoodIndicator'
+import MoodOverlay from './components/MoodOverlay'
+import TouchRipple from './components/TouchRipple'
 import Particles from './components/Particles'
 import Background from './components/Background'
 import { getTimeOfDay } from './utils/timeOfDay'
@@ -15,6 +17,18 @@ const EXP_ID_TO_NAME = {
   14: '咪咪眼', 15: '提督', 16: '舰长', 17: '泪眼', 18: '嘟嘴', 19: '爱心',
 }
 
+const MOOD_TO_RIM = {
+  '咪咪眼': 'rgba(255, 220, 100, 0.18)',
+  '爱心': 'rgba(255, 220, 100, 0.18)',
+  '吐舌': 'rgba(255, 220, 100, 0.18)',
+  '脸红': 'rgba(255, 130, 180, 0.2)',
+  '眼泪': 'rgba(100, 140, 220, 0.18)',
+  '泪眼': 'rgba(100, 140, 220, 0.18)',
+  '生气': 'rgba(220, 60, 60, 0.18)',
+  '黑脸': 'rgba(220, 60, 60, 0.18)',
+  '生气瘪嘴': 'rgba(220, 60, 60, 0.18)',
+}
+
 function App() {
   const live2dRef = useRef(null)
   const wsRef = useRef(null)
@@ -22,6 +36,7 @@ function App() {
   const [debugLogs, setDebugLogs] = useState([])
   const [currentExpression, setCurrentExpression] = useState(null)
   const [timeOfDay, setTimeOfDay] = useState(getTimeOfDay)
+  const [ripples, setRipples] = useState([])
   const moodTimerRef = useRef(null)
 
   useEffect(() => {
@@ -83,18 +98,27 @@ function App() {
 
   function handleTouch(area, pos) {
     wsRef.current?.send({ type: 'touch', area, x: pos.x, y: pos.y })
+    // Touch ripple effect
+    const id = Date.now()
+    setRipples(prev => [...prev, { id, x: pos.x, y: pos.y }])
+    setTimeout(() => setRipples(prev => prev.filter(r => r.id !== id)), 700)
   }
 
+  const rimColor = MOOD_TO_RIM[currentExpression] || 'rgba(47, 164, 231, 0.15)'
+
   return (
-    <div className="app">
+    <div className="app" style={{ '--rim-color': rimColor }}>
       <Background />
       <Particles timeOfDay={timeOfDay} />
+      <div className="vignette" />
+      <MoodOverlay expression={currentExpression} />
       <div className={`ws-status ${connected ? 'on' : 'off'}`} />
       <MoodIndicator expression={currentExpression} />
       <div className="live2d-main">
         <Live2DDisplay ref={live2dRef} onTouch={handleTouch} />
       </div>
       <DialogueBox />
+      {ripples.map(r => <TouchRipple key={r.id} x={r.x} y={r.y} />)}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: 'rgba(0,0,0,0.8)', color: '#0f0', fontSize: 11,

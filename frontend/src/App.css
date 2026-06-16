@@ -66,6 +66,35 @@ html, body, #root {
   word-break: break-word;
 }
 
+/* mood overlay */
+.mood-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+  pointer-events: none;
+  transition: background 2s ease;
+}
+.mood-none   { background: transparent; }
+.mood-happy  { background: rgba(255, 220, 100, 0.08); }
+.mood-shy    { background: rgba(255, 130, 150, 0.1); }
+.mood-sad    { background: rgba(100, 140, 200, 0.1); }
+.mood-angry  { background: rgba(200, 60, 60, 0.08); }
+
+/* vignette */
+.vignette {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.45) 100%);
+}
+
 /* background */
 .scene-background {
   position: fixed;
@@ -201,4 +230,126 @@ html, body, #root {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.5px;
+}
+
+/* rim light */
+.app .live2d-main::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  width: 80%;
+  height: 60%;
+  background: radial-gradient(ellipse, var(--rim-color, rgba(47, 164, 231, 0.15)) 0%, transparent 70%);
+  transition: background 1.5s ease;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* quick replies */
+.quick-replies {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 15;
+}
+.quick-reply-btn {
+  padding: 10px 24px;
+  background: rgba(10, 10, 30, 0.8);
+  border: 1px solid rgba(47, 164, 231, 0.4);
+  border-radius: 24px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  animation: reply-fade-in 0.3s ease forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+@keyframes reply-fade-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+.quick-reply-btn:hover {
+  background: rgba(47, 164, 231, 0.3);
+  border-color: rgba(47, 164, 231, 0.7);
+  box-shadow: 0 0 12px rgba(47, 164, 231, 0.2);
+  transform: translateY(-2px);
+}
+
+/* touch ripple */
+.touch-ripple {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  animation: ripple 0.6s ease-out forwards;
+  pointer-events: none;
+  z-index: 20;
+}
+@keyframes ripple {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+}
+
+/* dialogue history */
+.dialogue-history {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialogue-history-inner {
+  position: relative;
+  width: 90%;
+  max-width: 600px;
+  max-height: 70vh;
+  background: rgba(10, 10, 30, 0.95);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+.dialogue-history-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 20px;
+  cursor: pointer;
+}
+.dialogue-history-list {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 70vh;
+}
+.dialogue-history-item {
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+.dialogue-history-name {
+  font-size: 12px;
+  color: rgba(47, 164, 231, 0.8);
+  margin-right: 8px;
+}
+.dialogue-history-name.you {
+  color: rgba(255, 180, 100, 0.8);
+}
+.dialogue-history-text {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .particles { display: none; }
 }
