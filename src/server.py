@@ -125,20 +125,18 @@ async def say_and_express(text: str, expression: str = "happy", duration: int = 
         duration: 气泡显示时长（毫秒），默认 3000
     """
     await push.display_text(config.model.index, text, duration)
-    result = f"已显示文字：{text}"
 
     if expression not in config.expressions:
-        result += f"，未知表情 '{expression}'"
+        pass
     else:
         exp_id = config.expressions[expression]
         if exp_id == -1:
             await push.clear_expression(config.model.index)
-            result += "，已清除表情"
         else:
             await push.set_expression(config.model.index, exp_id)
-            result += f"，表情：{expression}"
 
-    return result
+    # Return the original text so the agent can use it as the channel reply
+    return text
 
 
 @mcp.tool()
