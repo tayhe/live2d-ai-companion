@@ -354,4 +354,4 @@ setInterval(() => {
 - [Live2D Cubism SDK](https://www.live2d.com/en/sdk/download/native/)
 - [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
 - [Project AIRI](https://github.com/moeru-ai/airi) — 自托管 AI 伴侣项目，支持 Live2D/VRM、实时语音、Minecraft/Factorio 游戏，41k stars
-- nana 项目（本地参考实现，FastAPI + React 架构）
+- [nana 项目](https://github.com/mewamew/nana)（参考实现，FastAPI + React 架构）

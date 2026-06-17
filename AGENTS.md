@@ -89,7 +89,7 @@ paramIntervalRef.current = setInterval(() => {
 
 ### 参考实现
 
-nana 项目的 Live2D 渲染：`/mnt/f/Syncthing/cloud/Projects/nana/frontend/src/components/Live2DModel.jsx`（line 213-230）。使用 `app.ticker.add()` 只写参数，不手动调用 `im.update()`。我们的项目因为后台标签页 rAF 节流，必须用 setInterval + `im.update()` + `model.autoUpdate = false`。
+[nana 项目](https://github.com/mewamew/nana) 的 Live2D 渲染：`/mnt/f/Syncthing/cloud/Projects/nana/frontend/src/components/Live2DModel.jsx`（line 213-230）。使用 `app.ticker.add()` 只写参数，不手动调用 `im.update()`。我们的项目因为后台标签页 rAF 节流，必须用 setInterval + `im.update()` + `model.autoUpdate = false`。
 
 ### 动作触发（只调一次）
 
@@ -293,4 +293,4 @@ Browser React (pixi-live2d-display) — Live2D 模型 + UI
 - [pixi-live2d-display 文档](https://guansss.github.io/pixi-live2d-display/)
 - [Live2D Cubism SDK](https://www.live2d.com/en/sdk/download/native/)
 - [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
-- [nana 项目](https://github.com/艾拉)（参考实现，FastAPI + React 架构）
+- [nana 项目](https://github.com/mewamew/nana)（参考实现，FastAPI + React 架构）
