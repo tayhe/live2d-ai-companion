@@ -230,16 +230,16 @@ asyncio.run(test())
 | ~~MoodIndicator~~ | 左上角心情 emoji + 标签 | ✅ 已完成 |
 | ~~Particles~~ | 浮动粒子（樱花/星光/萤火虫） | ✅ 已完成 |
 | ~~Background~~ | 按时间段切换背景图 | ✅ 已完成 |
-| **MoodOverlay** | 全屏情绪叠层（开心=暖黄、害羞=粉红、伤心=蓝、生气=红），2 秒淡入淡出 | 待做 |
-| **Vignette** | 暗角效果（径向渐变），增加画面层次感 | 待做 |
-| **TouchRipple** | 点击模型时的涟漪扩散特效 | 待做 |
-| **RimLight** | 角色背光，CSS 变量随表情变色 | 待做 |
+| **MoodOverlay** | 全屏情绪叠层（开心=暖黄、害羞=粉红、伤心=蓝、生气=红），2 秒淡入淡出 | ✅ 已完成 |
+| **Vignette** | 暗角效果（径向渐变），增加画面层次感 | ✅ 已完成 |
+| **TouchRipple** | 点击模型时的涟漪扩散特效 | ✅ 已完成 |
+| **RimLight** | 角色背光，CSS 变量随表情变色 | ✅ 已完成 |
 
 ### 交互功能（中等）
 | 功能 | 说明 | 状态 |
 |------|------|------|
-| **QuickReplies** | 快捷回复按钮，agent 回复时可选预设选项 | 待做 |
-| **DialogueHistory** | 对话历史面板，查看之前的对话 | 待做 |
+| **QuickReplies** | 快捷回复按钮，agent 回复时可选预设选项 | ✅ 已完成 |
+| **DialogueHistory** | 对话历史面板，查看之前的对话 | ✅ 已完成 |
 | **ConfigPanel** | 设置面板（音量、表情重置时间等） | 待做 |
 
 ### 高级功能（复杂）
@@ -255,6 +255,38 @@ asyncio.run(test())
 - 组件：`/mnt/f/Syncthing/cloud/Projects/nana/frontend/src/components/`
 - 样式：`/mnt/f/Syncthing/cloud/Projects/nana/frontend/src/App.css`（line 343-553）
 - 时间工具：`/mnt/f/Syncthing/cloud/Projects/nana/frontend/src/utils/timeOfDay.js`
+
+## 主任务完成状态（2026-06-17）
+
+### ✅ Agent → MCP → Live2D 完整链路打通
+
+```
+用户（飞书） → openclaw gateway → vivian agent (LLM)
+  ↓ 调用 MCP 工具
+MCP Server (src/server.py) — 8 个工具
+  ↓ broadcast() via WebSocket
+PushServer (port 10086) — 1+ clients
+  ↓ WebSocket 消息
+Browser React (pixi-live2d-display) — Live2D 模型 + UI
+```
+
+### 关键配置（openclaw.json）
+- `bindings`: feishu 渠道绑定到 vivian agent
+- `agents.list[].tools.allow`: 必须列出具体 MCP 工具名（如 `live2d__say_and_express`），通配符 `live2d__*` 无效
+- `mcp.servers.live2d`: MCP server 配置
+
+### 关键实现（src/server.py）
+- `say_and_express` 返回**原始文本**而非状态消息，让 agent 直接用工具返回值作为飞书回复，避免双重回复
+- 表情通过 `display_text` + `set_expression` 同时发送
+
+### 已验证功能
+- 飞书消息 → vivian agent → 调用 MCP 工具 → 浏览器显示文字+表情+心情图标
+- 浏览器和飞书显示**同一句话**（commit cafd7d1）
+- 13 个表情 + 2 个动作 + 自动眨眼 + 触摸涟漪 + 情绪叠层 + 背景切换 + 粒子效果
+
+### 注意事项
+- 改 MCP 代码后必须杀掉旧进程：`ps aux | grep src.server | grep -v grep` → `kill <PID>`
+- openclaw 缓存了 MCP 进程，不重启不会加载新代码
 
 ## 参考
 
